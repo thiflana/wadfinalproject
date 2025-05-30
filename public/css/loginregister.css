@@ -1,0 +1,99 @@
+/* public/css/login.css */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background: url('https://images.pexels.com/photos/1640773/pexels-photo-1640773.jpeg') no-repeat center center;
+    background-size: cover;
+    height: 100vh;
+    position: relative;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.container {
+    position: relative;
+    max-width: 1200px;
+    margin: 100px auto;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.image-side {
+    flex: 1;
+    background: url('https://canteen.telkomuniversity.ac.id/wp-content/uploads/2024/02/2016_0109_230412001.jpg') no-repeat center center;
+    background-size: cover;
+}
+
+.form-side {
+    flex: 1;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.form-side h2 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    color: #1f2937;
+}
+
+.form-side p {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 40px;
+}
+
+.input-group {
+    margin-bottom: 30px;
+}
+
+.input-group label {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.form-actions a {
+    text-decoration: underline;
+    color: inherit;
+}
+
+button.login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #4ade80;
+    border: none;
+    border-radius: 36px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 30px;
+}
