@@ -11,7 +11,7 @@
                     <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-orange-600 text-sm font-medium transition-colors duration-200">
                         Home
                     </a>
-                    <a href="#lost" class="text-gray-700 hover:text-orange-600 text-sm font-medium transition-colors duration-200">
+                    <a href="{{ route('products.index') }}" class="text-gray-700 hover:text-orange-600 text-sm font-medium transition-colors duration-200">
                         Product Listings
                     </a>
                     <a href="#report-lost" class="text-gray-700 hover:text-orange-600 text-sm font-medium transition-colors duration-200">
