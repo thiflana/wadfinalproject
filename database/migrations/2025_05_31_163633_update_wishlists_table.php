@@ -12,9 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wishlists', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->after('id');
-            $table->unsignedBigInteger('product_id')->after('user_id');
+            // Only add if the column does not already exist
+            if (!Schema::hasColumn('wishlists', 'product_id')) {
+                $table->unsignedBigInteger('product_id')->after('user_id');
 
+                // Add foreign key if desired
+                $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+            }
         });
     }
 
@@ -24,9 +28,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('wishlists', function (Blueprint $table) {
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-
+            if (Schema::hasColumn('wishlists', 'product_id')) {
+                // Drop foreign key first if it exists
+                $table->dropForeign(['product_id']);
+                $table->dropColumn('product_id');
+            }
         });
     }
 };
