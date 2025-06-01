@@ -20,8 +20,17 @@
 
             <!-- Success Message -->
             @if(session('success'))
-                <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+                <div class="bg-green-100 text-green-800 p-4 rounded mb-4">
                     {{ session('success') }}
+                </div>
+            @endif
+            @if ($errors->any())
+                <div class="bg-red-100 text-red-800 p-4 rounded mb-4">
+                    <ul class="list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
             <!-- Products Grid -->
@@ -39,24 +48,10 @@
                                             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
                                         </svg>
                                     </div>
-                                @endif
-                                
-                                <!-- Status Badges -->
-                                <div class="absolute top-3 left-3 flex space-x-2">
-                                    @if($product->is_new)
-                                        <span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">New</span>
-                                    @endif
-                                    @if($product->is_featured)
-                                        <span class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium">Featured</span>
-                                    @endif
-                                    @if(!$product->is_active)
-                                        <span class="bg-gray-500 text-white px-2 py-1 rounded-full text-xs font-medium">Inactive</span>
-                                    @endif
-                                </div>
-                                
+                                @endif                                
                                 <!-- Price -->
                                 <div class="absolute top-3 right-3">
-                                    <span class="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">{{ $product->formatted_price }}</span>
+                                    <span class="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">{{ $product->price }}</span>
                                 </div>
                             </div>
 
@@ -66,14 +61,6 @@
                                 <p class="text-gray-600 text-sm mb-2">{{ $product->restaurant_name }}</p>
                                 <p class="text-gray-500 text-xs mb-3 line-clamp-2">{{ Str::limit($product->description, 60) }}</p>
                                 
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center">
-                                        <span class="text-yellow-400 text-sm">★</span>
-                                        <span class="text-gray-600 text-sm ml-1">{{ $product->rating }}</span>
-                                    </div>
-                                    <span class="text-gray-500 text-sm">{{ $product->delivery_time }} min</span>
-                                </div>
-
                                 <!-- Action Buttons -->
                                 <div class="flex space-x-2">
                                     <a href="{{ route('products.show', $product) }}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-center py-2 rounded-md text-sm font-medium transition-colors duration-200">
@@ -95,9 +82,6 @@
                                 <form action="{{ route('products.toggle-status', $product) }}" method="POST" class="mt-2">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="w-full {{ $product->is_active ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-500 hover:bg-green-600' }} text-white py-2 rounded-md text-sm font-medium transition-colors duration-200">
-                                        {{ $product->is_active ? 'Deactivate' : 'Activate' }}
-                                    </button>
                                 </form>
                             </div>
                         </div>

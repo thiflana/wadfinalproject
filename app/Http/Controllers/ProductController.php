@@ -13,10 +13,10 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::where('umkm_id', 1)->paginate(10);
-        
+        $products = Product::where('umkm_id', auth()->user()->umkm_id)->paginate(10);
         return view('products.index', compact('products'));
     }
+
 
     public function create()
     {
@@ -27,30 +27,26 @@ class ProductController extends Controller
 {
     $validated = $request->validate([
         'name' => 'required|string|max:255',
-        'description' => 'required|string',
+        'description' => 'nullable|string',
         'price' => 'required|numeric|min:0',
-        'stock' => 'required|integer|min:0',
-        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        'umkm_id' => 'required'
+        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
     ]);
 
-        $products = Product::all();
-
-        // Handle image upload
-        if ($request->hasFile('image')) {
+    if ($request->hasFile('image')) {
         $validated['image_path'] = $request->file('image')->store('products', 'public');
     }
 
-        Product::create($validated);
+    $validated['umkm_id'] = auth()->user()->umkm_id ?? auth()->id(); // adjust as needed
 
-        return redirect()->route('products.index')
-                        ->with('success', 'Product created successfully!');
-    }
+    Product::create($validated);
+
+    return redirect()->route('products.index')->with('success', 'Product created successfully!');
+}
 
     public function show(Product $product)
     {
         // Check if user owns this product
-        if ($product->user_id !== Auth::id()) {
+        if ($product->umkm_id !== Auth::user()->umkm_id) {
             abort(403);
         }
 
@@ -60,7 +56,7 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         // Check if user owns this product
-        if ($product->user_id !== Auth::id()) {
+        if ($product->umkm_id !== Auth::user()->umkm_id) {
             abort(403);
         }
 
@@ -70,7 +66,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         // Check if user owns this product
-        if ($product->user_id !== Auth::id()) {
+        if ($product->umkm_id !== Auth::user()->umkm_id) {
             abort(403);
         }
 
@@ -78,14 +74,12 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'umkm_id' => 'required'
         ]);
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            // Delete old image
+            // Delete old imageW
             if ($product->image_path) {
                 Storage::disk('public')->delete($product->image_path);
             }
@@ -103,7 +97,7 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         // Check if user owns this product
-        if ($product->user_id !== Auth::id()) {
+        if ($product->umkm_id !== Auth::user()->umkm_id) {
             abort(403);
         }
 
@@ -118,18 +112,4 @@ class ProductController extends Controller
                         ->with('success', 'Product deleted successfully!');
     }
 
-    public function toggleStatus(Product $product)
-    {
-        // Check if user owns this product
-        if ($product->user_id !== Auth::id()) {
-            abort(403);
-        }
-
-        $product->update(['is_active' => !$product->is_active]);
-
-        $status = $product->is_active ? 'activated' : 'deactivated';
-        
-        return redirect()->back()
-                        ->with('success', "Product {$status} successfully!");
-    }
 }
