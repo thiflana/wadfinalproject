@@ -7,13 +7,14 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-
+use App\Models\Umkm; 
 
 class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::where('umkm_id', auth()->user()->umkm_id)->paginate(10);
+        $umkm_id = auth()->user()->umkm_id ?? null; // Ensure it doesn’t break
+        $products = $umkm_id ? Product::where('umkm_id', $umkm_id)->paginate(10) : Product::paginate(10); // Fallback to all products
         return view('products.index', compact('products'));
     }
 
@@ -23,25 +24,33 @@ class ProductController extends Controller
         return view('products.create');
     }
 
-    public function store(Request $request)
-{
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'price' => 'required|numeric|min:0',
-        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-    ]);
+   public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
 
-    if ($request->hasFile('image')) {
-        $validated['image_path'] = $request->file('image')->store('products', 'public');
+        if ($request->hasFile('image')) {
+            $validated['image_path'] = $request->file('image')->store('products', 'public');
+        }
+
+        // Ensure the user has an UMKM, create one if missing
+        $umkm = Umkm::firstOrCreate(
+            ['user_id' => auth()->id()], // Check if the user already has an UMKM
+            ['name' => 'Default UMKM'] // Create a new UMKM with default name if needed
+        );
+
+        // Assign the UMKM ID dynamically
+        $validated['umkms_id'] = $umkm->id;
+
+        // Create the product
+        Product::create($validated);
+
+        return redirect()->route('products.index')->with('success', 'Product created successfully!');
     }
-
-    $validated['umkm_id'] = auth()->user()->umkm_id ?? auth()->id(); // adjust as needed
-
-    Product::create($validated);
-
-    return redirect()->route('products.index')->with('success', 'Product created successfully!');
-}
 
     public function show(Product $product)
     {

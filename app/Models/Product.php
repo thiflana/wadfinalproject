@@ -14,11 +14,12 @@ class Product extends Model
         'description',
         'price',
         'image_path',
+        'umkms_id'
     ];
 
     public function seller()
     {
-        return $this->belongsTo(User::class, 'umkm_id');
+        return $this->belongsTo(User::class, 'umkms_id');
     }
 
 
