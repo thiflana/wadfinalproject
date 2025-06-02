@@ -2,74 +2,81 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\Wishlist;
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class WishlistController extends Controller
 {
-    // Display all wishlists for the logged-in user
-    public function index()
+    /**
+     * Toggle wishlist status for a product
+     */
+    public function toggle(Request $request, Product $product)
     {
-        $wishlists = Wishlist::where('user_id', auth()->id())
-            ->with('product')
-            ->get();
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You must be logged in to wishlist products'
+            ], 401);
+        }
 
-        return view('wishlist.index', compact('wishlists'));
-    }
-
-    // Store a new wishlist entry
-    public function store(Request $request)
-    {
-        $request->validate([
-            'product_id' => 'required|exists:products,id'
-        ]);
-
-        // Prevent duplicate wishlists
-        $existing = Wishlist::where('user_id', auth()->id())
-            ->where('product_id', $request->product_id)
+        $user = Auth::user();
+        $wishlist = Wishlist::where('user_id', $user->id)
+            ->where('product_id', $product->id)
             ->first();
 
-        if ($existing) {
-            return redirect()->back()->with('info', 'Product already in wishlist.');
+        if ($wishlist) {
+            // Remove from wishlist
+            $wishlist->delete();
+            $isWishlisted = false;
+            $message = 'Removed from wishlist';
+        } else {
+            // Add to wishlist
+            Wishlist::create([
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+            ]);
+            $isWishlisted = true;
+            $message = 'Added to wishlist';
         }
 
-        Wishlist::create([
-            'user_id' => auth()->id(),
-            'product_id' => $request->product_id
+        return response()->json([
+            'success' => true,
+            'is_wishlisted' => $isWishlisted,
+            'message' => $message
         ]);
-
-        return redirect()->back()->with('success', 'Product added to wishlist!');
     }
 
-    // Update wishlist notes
-    public function update(Request $request, Wishlist $wishlist)
+    /**
+     * Get user's wishlist
+     */
+    public function index()
     {
-        $request->validate([
-            'notes' => 'nullable|string'
-        ]);
-
-        // Check ownership
-        if ($wishlist->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+        if (!Auth::check()) {
+            return redirect()->route('login');
         }
 
-        $wishlist->update([
-            'notes' => $request->notes
-        ]);
+        $wishlist = Wishlist::with('product')
+            ->where('user_id', Auth::id())
+            ->paginate(12);
 
-        return redirect()->back()->with('success', 'Wishlist updated!');
+        return view('wishlist.index', compact('wishlist'));
     }
 
-    // Delete wishlist entry
-    public function destroy(Wishlist $wishlist)
+    /**
+     * Check if product is wishlisted by current user
+     */
+    public function check(Product $product)
     {
-        if ($wishlist->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+        if (!Auth::check()) {
+            return response()->json(['is_wishlisted' => false]);
         }
 
-        $wishlist->delete();
+        $isWishlisted = Wishlist::where('user_id', Auth::id())
+            ->where('product_id', $product->id)
+            ->exists();
 
-        return redirect()->back()->with('success', 'Product removed from wishlist!');
+        return response()->json(['is_wishlisted' => $isWishlisted]);
     }
 }
