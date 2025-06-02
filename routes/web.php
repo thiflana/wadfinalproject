@@ -24,16 +24,12 @@ Route::middleware('auth')->prefix('products')->name('products.')->group(function
     Route::patch('/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggle-status');
 });
 
-//Wishlist 
-Route::middleware('auth')->prefix('wishlists')->name('wishlists.')->group(function () {
-    // Display user's wishlist
-    Route::get('/', [WishlistController::class, 'index'])->name('index');
-    // Add product to wishlist
-    Route::post('/', [WishlistController::class, 'store'])->name('store');
-    // Update a wishlist item (e.g., notes or extra fields)
-    Route::put('/{wishlist}', [WishlistController::class, 'update'])->name('update');
-    // Delete a wishlist item
-    Route::delete('/{wishlist}', [WishlistController::class, 'destroy'])->name('destroy');
+
+// Routes (add to web.php)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/wishlist/{product}/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+    Route::get('/wishlist/{product}/check', [WishlistController::class, 'check'])->name('wishlist.check');
 });
 
 Route::middleware('auth')->group(function () {
