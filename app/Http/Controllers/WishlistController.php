@@ -14,39 +14,45 @@ class WishlistController extends Controller
      */
     public function toggle(Request $request, Product $product)
     {
-        if (!Auth::check()) {
+    if (!Auth::check()) {
+        if ($request->expectsJson()) {
             return response()->json([
                 'success' => false,
                 'message' => 'You must be logged in to wishlist products'
             ], 401);
-        }
-
-        $user = Auth::user();
-        $wishlist = Wishlist::where('user_id', $user->id)
-            ->where('product_id', $product->id)
-            ->first();
-
-        if ($wishlist) {
-            // Remove from wishlist
-            $wishlist->delete();
-            $isWishlisted = false;
-            $message = 'Removed from wishlist';
         } else {
-            // Add to wishlist
-            Wishlist::create([
-                'user_id' => $user->id,
-                'product_id' => $product->id,
-            ]);
-            $isWishlisted = true;
-            $message = 'Added to wishlist';
+            return redirect()->route('login');
         }
+    }
 
+    $user = Auth::user();
+    $wishlist = Wishlist::where('user_id', $user->id)
+        ->where('product_id', $product->id)
+        ->first();
+
+    if ($wishlist) {
+        $wishlist->delete();
+        $isWishlisted = false;
+        $message = 'Removed from wishlist';
+    } else {
+        Wishlist::create([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+        ]);
+        $isWishlisted = true;
+        $message = 'Added to wishlist';
+    }
+
+    if ($request->expectsJson()) {
         return response()->json([
             'success' => true,
             'is_wishlisted' => $isWishlisted,
             'message' => $message
         ]);
     }
+
+    return redirect()->back()->with('success', $message);
+}
 
     /**
      * Get user's wishlist
