@@ -36,7 +36,7 @@ class OrderController extends Controller
         }
 
         $subtotal = $cartItems->sum('subtotal');
-        $deliveryFee = 5000; // Fixed delivery fee, you can make this dynamic
+        $deliveryFee = 6000; // Fixed delivery fee, you can make this dynamic
         $total = $subtotal + $deliveryFee;
 
         return view('orders.checkout', compact('cartItems', 'subtotal', 'deliveryFee', 'total'));
