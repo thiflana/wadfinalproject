@@ -8,6 +8,9 @@
 
             <!-- Navigation Links -->
             <div class="flex items-center space-x-8">
+                <a href="{{ route('admin.analytics') }}" class="text-gray-700 hover:text-orange-600 text-sm font-medium transition-colors duration-200">
+                    View Analytics
+                </a>
                 <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-orange-600 text-sm font-medium transition-colors duration-200">
                     Home
                 </a>
