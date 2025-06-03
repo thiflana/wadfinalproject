@@ -43,7 +43,6 @@
                         @foreach($products as $product)
                             <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 product-card" 
                                  data-name="{{ strtolower($product->name) }}" 
-                                 data-restaurant="{{ strtolower($product->umkm->name ?? 'Unknown Restaurant') }}"
                                  data-description="{{ strtolower($product->description ?? '') }}">
                                 <!-- Product Image -->
                                 <div class="relative">
@@ -86,19 +85,17 @@
                                 <!-- Product Info -->
                                 <div class="p-4">
                                     <h3 class="font-bold text-lg text-gray-900 mb-1">{{ $product->name }}</h3>
-                                    <p class="text-gray-600 text-sm mb-2">{{ $product->umkm->name ?? 'Unknown Restaurant' }}</p>
                                     <p class="text-gray-500 text-xs mb-3 line-clamp-2">{{ Str::limit($product->description, 60) }}</p>
 
                                     <!-- Action Buttons -->
                                     <div class="flex space-x-2">
-                                        <button class="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-center py-2 rounded-md text-sm font-medium transition-colors duration-200 view-product-btn" 
-                                                data-product-id="{{ $product->id }}">
-                                            View Details
-                                        </button>
+                                        <a href="{{ route('products.show', $product) }}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-center py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                                            View
+                                        </a>
                                         @auth
                                             <button class="flex-1 bg-green-500 hover:bg-green-600 text-white text-center py-2 rounded-md text-sm font-medium transition-colors duration-200 order-btn" 
                                                     data-product-id="{{ $product->id }}">
-                                                Order Now
+                                                Add to Cart
                                             </button>
                                         @else
                                             <a href="{{ route('login') }}" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-center py-2 rounded-md text-sm font-medium transition-colors duration-200">
@@ -273,6 +270,122 @@ function updateHeartIcon(button) {
         heartIcon.classList.remove('text-red-500');
         heartIcon.classList.add('text-gray-600', 'group-hover:text-red-500');
     }
+}
+// Order/Add to Cart button functionality  
+const orderButtons = document.querySelectorAll('.order-btn');
+orderButtons.forEach(button => {
+    button.addEventListener('click', function() {
+        const productId = this.dataset.productId;
+        showAddToCartModal(productId);
+    });
+});
+
+function showAddToCartModal(productId) {
+    const modal = document.getElementById('productModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    
+    modalTitle.textContent = 'Add to Cart';
+    modalContent.innerHTML = `
+        <form id="addToCartForm">
+            <div class="space-y-4">
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                    <div class="flex items-center space-x-3">
+                        <button type="button" id="decreaseQty" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                            </svg>
+                        </button>
+                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="10" class="w-16 text-center border border-gray-300 rounded-md py-1">
+                        <button type="button" id="increaseQty" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-8 h-8 rounded-full flex items-center justify-center">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">Special Notes (Optional)</label>
+                    <textarea id="notes" name="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" placeholder="Any special requests..."></textarea>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" id="cancelAddToCart" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-md transition-colors">Cancel</button>
+                    <button type="submit" id="confirmAddToCart" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition-colors">Add to Cart</button>
+                </div>
+            </div>
+        </form>
+    `;
+    
+    modal.classList.remove('hidden');
+    
+    // Quantity controls
+    const quantityInput = document.getElementById('quantity');
+    const decreaseBtn = document.getElementById('decreaseQty');
+    const increaseBtn = document.getElementById('increaseQty');
+    
+    decreaseBtn.addEventListener('click', () => {
+        if (quantityInput.value > 1) {
+            quantityInput.value = parseInt(quantityInput.value) - 1;
+        }
+    });
+    
+    increaseBtn.addEventListener('click', () => {
+        if (quantityInput.value < 10) {
+            quantityInput.value = parseInt(quantityInput.value) + 1;
+        }
+    });
+    
+    // Cancel button
+    document.getElementById('cancelAddToCart').addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+    
+    // Form submission
+    document.getElementById('addToCartForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        
+        const confirmBtn = document.getElementById('confirmAddToCart');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Adding...';
+        
+        try {
+            const response = await fetch(`/cart/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast(result.message);
+                modal.classList.add('hidden');
+                
+                // Update cart count in navigation if you have one
+                const cartCount = document.getElementById('cartCount');
+                if (cartCount) {
+                    cartCount.textContent = result.cart_count;
+                }
+            } else {
+                showToast(result.message || 'Something went wrong. Please try again.');
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Add to Cart';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Something went wrong. Please try again.');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Add to Cart';
+        }
+    });
 }
 
 function showProductModal(productId) {
