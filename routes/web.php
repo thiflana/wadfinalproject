@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
+    Route::patch('/analytics/remove/{product}', [AnalyticsController::class, 'removeFromSearch'])->name('analytics.remove');
 });
 
 require __DIR__.'/auth.php';

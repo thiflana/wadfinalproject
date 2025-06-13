@@ -14,13 +14,12 @@ class Product extends Model
         'description',
         'price',
         'image_path',
-        'umkms_id'
+        'umkms_id',
+        'hidden' // Allow Laravel to handle this column
     ];
 
     public function seller()
     {
         return $this->belongsTo(User::class, 'umkms_id');
     }
-
-
 }
