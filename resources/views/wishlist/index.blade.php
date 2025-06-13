@@ -37,7 +37,7 @@
                                 @endif
                                 <div class="absolute top-3 right-3">
                                     <span class="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                        {{ $product->price }}
+                                        Rp {{ number_format($product->price, 0, ',', '.') }}
                                     </span>
                                 </div>
                             </div>
@@ -45,13 +45,31 @@
                             <!-- Product Info -->
                             <div class="p-4">
                                 <h3 class="font-bold text-lg text-gray-900 mb-1">{{ $product->name }}</h3>
-                                <p class="text-gray-600 text-sm mb-2">{{ $product->restaurant_name }}</p>
+                                <p class="text-gray-600 text-sm mb-2">{{ $product->restaurant_name ?? 'Restaurant' }}</p>
                                 <p class="text-gray-500 text-xs mb-3 line-clamp-2">{{ Str::limit($product->description, 60) }}</p>
+                                
+                                <!-- Display notes if they exist -->
+                                @if($item->notes)
+                                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-3">
+                                        <p class="text-xs text-yellow-800">
+                                            <span class="font-medium">Note:</span> {{ Str::limit($item->notes, 50) }}
+                                        </p>
+                                    </div>
+                                @endif
 
                                 <div class="flex space-x-2">
                                     <a href="{{ route('products.show', $product) }}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-center py-2 rounded-md text-sm font-medium transition-colors duration-200">
                                         View
                                     </a>
+
+                                    <!-- Notes Button -->
+                                    <button type="button" 
+                                            class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md text-sm font-medium transition-colors duration-200 notes-btn"
+                                            data-wishlist-id="{{ $item->id }}"
+                                            data-product-name="{{ $product->name }}"
+                                            data-current-notes="{{ $item->notes ?? '' }}">
+                                        Notes
+                                    </button>
 
                                     <!-- Remove from Wishlist -->
                                     <form action="{{ route('wishlist.toggle', $product) }}" method="POST" class="flex-1">
@@ -87,4 +105,198 @@
             @endif
         </div>
     </div>
+
+    <!-- Notes Modal -->
+    <div id="notesModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 id="notesModalTitle" class="text-xl font-bold text-gray-900">Add Notes</h3>
+                        <button id="closeNotesModal" class="text-gray-500 hover:text-gray-700">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form id="notesForm">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="wishlistNotes" class="block text-sm font-medium text-gray-700 mb-2">Your Notes</label>
+                                <textarea id="wishlistNotes" 
+                                          name="notes" 
+                                          rows="4" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500" 
+                                          placeholder="Add your personal notes about this product..."></textarea>
+                                <p class="text-xs text-gray-500 mt-1">Maximum 255 characters</p>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button type="button" id="cancelNotes" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-md transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" id="saveNotes" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition-colors">
+                                    Save Notes
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const notesModal = document.getElementById('notesModal');
+        const notesModalTitle = document.getElementById('notesModalTitle');
+        const notesForm = document.getElementById('notesForm');
+        const notesTextarea = document.getElementById('wishlistNotes');
+        const closeNotesModal = document.getElementById('closeNotesModal');
+        const cancelNotes = document.getElementById('cancelNotes');
+        const saveNotes = document.getElementById('saveNotes');
+        const notesButtons = document.querySelectorAll('.notes-btn');
+        
+        let currentWishlistId = null;
+
+        // Open notes modal
+        notesButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                currentWishlistId = this.dataset.wishlistId;
+                const productName = this.dataset.productName;
+                const currentNotes = this.dataset.currentNotes;
+                
+                notesModalTitle.textContent = `Notes for ${productName}`;
+                notesTextarea.value = currentNotes;
+                notesModal.classList.remove('hidden');
+                notesTextarea.focus();
+            });
+        });
+
+        // Close modal functions
+        function closeModal() {
+            notesModal.classList.add('hidden');
+            currentWishlistId = null;
+            notesTextarea.value = '';
+        }
+
+        closeNotesModal.addEventListener('click', closeModal);
+        cancelNotes.addEventListener('click', closeModal);
+
+        // Close modal when clicking outside
+        notesModal.addEventListener('click', function(e) {
+            if (e.target === notesModal) {
+                closeModal();
+            }
+        });
+
+        // Save notes
+        notesForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentWishlistId) return;
+            
+            const notes = notesTextarea.value.trim();
+            
+            // Disable save button during request
+            saveNotes.disabled = true;
+            saveNotes.textContent = 'Saving...';
+            
+            try {
+                const response = await fetch(`/wishlist/${currentWishlistId}/notes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ notes: notes })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(data.message);
+                    closeModal();
+                    
+                    // Update the notes button data and display
+                    const notesBtn = document.querySelector(`[data-wishlist-id="${currentWishlistId}"]`);
+                    if (notesBtn) {
+                        notesBtn.dataset.currentNotes = notes;
+                        
+                        // Update the notes display in the card
+                        const card = notesBtn.closest('.bg-white');
+                        const existingNotesDiv = card.querySelector('.bg-yellow-50');
+                        
+                        if (notes) {
+                            if (existingNotesDiv) {
+                                existingNotesDiv.querySelector('.text-yellow-800').innerHTML = 
+                                    `<span class="font-medium">Note:</span> ${notes.length > 50 ? notes.substring(0, 50) + '...' : notes}`;
+                            } else {
+                                const notesDiv = document.createElement('div');
+                                notesDiv.className = 'bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-3';
+                                notesDiv.innerHTML = `
+                                    <p class="text-xs text-yellow-800">
+                                        <span class="font-medium">Note:</span> ${notes.length > 50 ? notes.substring(0, 50) + '...' : notes}
+                                    </p>
+                                `;
+                                const productInfo = card.querySelector('.p-4');
+                                const buttonsDiv = productInfo.querySelector('.flex.space-x-2');
+                                productInfo.insertBefore(notesDiv, buttonsDiv);
+                            }
+                        } else if (existingNotesDiv) {
+                            existingNotesDiv.remove();
+                        }
+                    }
+                } else {
+                    showToast(data.message || 'Failed to save notes');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Something went wrong. Please try again.');
+            } finally {
+                saveNotes.disabled = false;
+                saveNotes.textContent = 'Save Notes';
+            }
+        });
+
+        // Character counter for textarea
+        notesTextarea.addEventListener('input', function() {
+            const maxLength = 255;
+            const currentLength = this.value.length;
+            const counterText = this.parentNode.querySelector('.text-xs.text-gray-500');
+            
+            if (currentLength > maxLength) {
+                this.value = this.value.substring(0, maxLength);
+                counterText.textContent = `Maximum ${maxLength} characters reached`;
+                counterText.classList.add('text-red-500');
+            } else {
+                counterText.textContent = `${currentLength}/${maxLength} characters`;
+                counterText.classList.remove('text-red-500');
+            }
+        });
+    });
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('translate-x-0');
+        }, 100);
+        
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    }
+    </script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </x-app-layout>

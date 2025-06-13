@@ -85,4 +85,38 @@ class WishlistController extends Controller
 
         return response()->json(['is_wishlisted' => $isWishlisted]);
     }
+    
+    public function updateNotes(Request $request, $wishlistId)
+    {
+    if (!Auth::check()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You must be logged in'
+        ], 401);
+    }
+
+    $request->validate([
+        'notes' => 'nullable|string|max:255'
+    ]);
+
+    $wishlist = Wishlist::where('id', $wishlistId)
+        ->where('user_id', Auth::id())
+        ->first();
+
+    if (!$wishlist) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Wishlist item not found'
+        ], 404);
+    }
+
+    $wishlist->update([
+        'notes' => $request->notes
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Notes updated successfully'
+    ]);
+    }
 }

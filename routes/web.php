@@ -33,11 +33,11 @@ Route::middleware('auth')->prefix('products')->name('products.')->group(function
 });
 
 
-// Routes (add to web.php)
 Route::middleware(['auth'])->group(function () {
     Route::post('/wishlist/{product}/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
     Route::get('/wishlist/{product}/check', [WishlistController::class, 'check'])->name('wishlist.check');
+    Route::post('/wishlist/{wishlist}/notes', [WishlistController::class, 'updateNotes'])->name('wishlist.notes.update');
 });
 
 Route::middleware('auth')->group(function () {
